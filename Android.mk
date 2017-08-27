@@ -564,7 +564,6 @@ $(sepolicy.recovery.conf): $(call build_policy, $(sepolicy_build_files), \
 		-D target_with_dexpreopt=$(WITH_DEXPREOPT) \
 		-D target_arch=$(PRIVATE_TGT_ARCH) \
 		-D target_with_asan=$(PRIVATE_TGT_WITH_ASAN) \
-		-D old_sepolicy=$(POLICYVERS) \
 		-D target_recovery=true \
 		-D target_needs_platform_text_relocations=$(TARGET_NEEDS_PLATFORM_TEXT_RELOCATIONS) \
 		-s $^ > $@
@@ -611,6 +610,7 @@ $(PLAT_PUBLIC_POLICY) $(PLAT_PRIVATE_POLICY))
 		-D target_with_asan=false \
 		-D target_full_treble=cts \
 		-D target_needs_platform_text_relocations=$(TARGET_NEEDS_PLATFORM_TEXT_RELOCATIONS) \
+		-D old_sepolicy=$(POLICYVERS) \
 		-s $^ > $@
 	$(hide) sed '/dontaudit/d' $@ > $@.dontaudit
 
