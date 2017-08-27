@@ -143,9 +143,13 @@ sepolicy_build_files := security_classes \
                         mls \
                         policy_capabilities \
                         te_macros \
-                        attributes \
+                        attributes
+ifeq ($(POLICYVERS),30)
+ sepolicy_build_files +=\
                         ioctl_defines \
-                        ioctl_macros \
+                        ioctl_macros
+endif
+ sepolicy_build_files += \
                         *.te \
                         roles_decl \
                         roles \
@@ -555,6 +559,7 @@ $(sepolicy.recovery.conf): $(call build_policy, $(sepolicy_build_files), \
 		-D target_with_dexpreopt=$(WITH_DEXPREOPT) \
 		-D target_arch=$(PRIVATE_TGT_ARCH) \
 		-D target_with_asan=$(PRIVATE_TGT_WITH_ASAN) \
+		-D old_sepolicy=$(POLICYVERS) \
 		-D target_recovery=true \
 		-s $^ > $@
 	$(hide) sed '/dontaudit/d' $@ > $@.dontaudit
