@@ -80,21 +80,9 @@ endif
 #    - compile output binary policy file
 
 PLAT_PUBLIC_POLICY := $(LOCAL_PATH)/public
-ifneq ( ,$(BOARD_PLAT_PUBLIC_SEPOLICY_DIR))
-ifneq (1, $(words $(BOARD_PLAT_PUBLIC_SEPOLICY_DIR)))
-$(error BOARD_PLAT_PUBLIC_SEPOLICY_DIR must only contain one directory)
-else
 PLAT_PUBLIC_POLICY += $(BOARD_PLAT_PUBLIC_SEPOLICY_DIR)
-endif
-endif
 PLAT_PRIVATE_POLICY := $(LOCAL_PATH)/private
-ifneq ( ,$(BOARD_PLAT_PRIVATE_SEPOLICY_DIR))
-ifneq (1, $(words $(BOARD_PLAT_PRIVATE_SEPOLICY_DIR)))
-$(error BOARD_PLAT_PRIVATE_SEPOLICY_DIR must only contain one directory)
-else
 PLAT_PRIVATE_POLICY += $(BOARD_PLAT_PRIVATE_SEPOLICY_DIR)
-endif
-endif
 PLAT_VENDOR_POLICY := $(LOCAL_PATH)/vendor
 REQD_MASK_POLICY := $(LOCAL_PATH)/reqd_mask
 
@@ -267,6 +255,7 @@ $(PLAT_PUBLIC_POLICY) $(REQD_MASK_POLICY))
 		-D target_with_asan=$(PRIVATE_TGT_WITH_ASAN) \
 		-D target_full_treble=$(PRODUCT_FULL_TREBLE) \
 		-D target_needs_platform_text_relocations=$(TARGET_NEEDS_PLATFORM_TEXT_RELOCATIONS) \
+		-D target_uses_legacy_adb_interface=$(TARGET_USES_LEGACY_ADB_INTERFACE) \
 		-s $^ > $@
 
 plat_pub_policy.cil := $(intermediates)/plat_pub_policy.cil
@@ -324,6 +313,7 @@ $(PLAT_PUBLIC_POLICY) $(PLAT_PRIVATE_POLICY))
 		-D target_with_asan=$(PRIVATE_TGT_WITH_ASAN) \
 		-D target_full_treble=$(PRODUCT_FULL_TREBLE) \
 		-D target_needs_platform_text_relocations=$(TARGET_NEEDS_PLATFORM_TEXT_RELOCATIONS) \
+		-D target_uses_legacy_adb_interface=$(TARGET_USES_LEGACY_ADB_INTERFACE) \
 		-s $^ > $@
 	$(hide) sed '/dontaudit/d' $@ > $@.dontaudit
 
@@ -335,7 +325,7 @@ $(LOCAL_BUILT_MODULE): $(plat_policy.conf) $(HOST_OUT_EXECUTABLES)/checkpolicy \
 	@mkdir -p $(dir $@)
 	$(hide) $(HOST_OUT_EXECUTABLES)/checkpolicy -M -C -c $(POLICYVERS) -o $@ $<
 	$(hide) cat $(PRIVATE_ADDITIONAL_CIL_FILES) >> $@
-	$(hide) $(HOST_OUT_EXECUTABLES)/secilc -M true -G -c $(POLICYVERS) $@ -o /dev/null -f /dev/null
+	$(hide) $(HOST_OUT_EXECUTABLES)/secilc -m -M true -G -c $(POLICYVERS) $@ -o /dev/null -f /dev/null
 
 built_plat_cil := $(LOCAL_BUILT_MODULE)
 plat_policy.conf :=
@@ -436,6 +426,7 @@ $(PLAT_PUBLIC_POLICY) $(REQD_MASK_POLICY) $(PLAT_VENDOR_POLICY) $(BOARD_SEPOLICY
 		-D target_with_asan=$(PRIVATE_TGT_WITH_ASAN) \
 		-D target_full_treble=$(PRODUCT_FULL_TREBLE) \
 		-D target_needs_platform_text_relocations=$(TARGET_NEEDS_PLATFORM_TEXT_RELOCATIONS) \
+		-D target_uses_legacy_adb_interface=$(TARGET_USES_LEGACY_ADB_INTERFACE) \
 		-s $^ > $@
 	$(hide) sed '/dontaudit/d' $@ > $@.dontaudit
 
@@ -456,7 +447,7 @@ $(HOST_OUT_EXECUTABLES)/version_policy $(HOST_OUT_EXECUTABLES)/secilc \
 $(built_plat_cil) $(built_mapping_cil)
 	@mkdir -p $(dir $@)
 	$(HOST_OUT_EXECUTABLES)/version_policy -b $< -t $(PRIVATE_TGT_POL) -n $(PRIVATE_VERS) -o $@
-	$(hide) $(HOST_OUT_EXECUTABLES)/secilc -M true -G -N -c $(POLICYVERS) \
+	$(hide) $(HOST_OUT_EXECUTABLES)/secilc -m -M true -G -N -c $(POLICYVERS) \
 		$(PRIVATE_DEP_CIL_FILES) $@ -o /dev/null -f /dev/null
 
 built_nonplat_cil := $(LOCAL_BUILT_MODULE)
@@ -478,7 +469,7 @@ $(LOCAL_BUILT_MODULE): PRIVATE_CIL_FILES := \
 $(built_plat_cil) $(built_mapping_cil) $(built_nonplat_cil)
 $(LOCAL_BUILT_MODULE): $(HOST_OUT_EXECUTABLES)/secilc \
 $(built_plat_cil) $(built_mapping_cil) $(built_nonplat_cil)
-	$(hide) $(HOST_OUT_EXECUTABLES)/secilc -M true -G -c $(POLICYVERS) \
+	$(hide) $(HOST_OUT_EXECUTABLES)/secilc -m -M true -G -c $(POLICYVERS) \
 		$(PRIVATE_CIL_FILES) -o $@ -f /dev/null
 
 built_precompiled_sepolicy := $(LOCAL_BUILT_MODULE)
@@ -519,7 +510,7 @@ all_cil_files := \
 $(LOCAL_BUILT_MODULE): PRIVATE_CIL_FILES := $(all_cil_files)
 $(LOCAL_BUILT_MODULE): $(HOST_OUT_EXECUTABLES)/secilc $(HOST_OUT_EXECUTABLES)/sepolicy-analyze $(all_cil_files)
 	@mkdir -p $(dir $@)
-	$(hide) $< -M true -G -c $(POLICYVERS) $(PRIVATE_CIL_FILES) -o $@.tmp -f /dev/null
+	$(hide) $< -m -M true -G -c $(POLICYVERS) $(PRIVATE_CIL_FILES) -o $@.tmp -f /dev/null
 	$(hide) $(HOST_OUT_EXECUTABLES)/sepolicy-analyze $@.tmp permissive > $@.permissivedomains
 	$(hide) if [ "$(TARGET_BUILD_VARIANT)" = "user" -a -s $@.permissivedomains ]; then \
 		echo "==========" 1>&2; \
@@ -565,6 +556,7 @@ $(sepolicy.recovery.conf): $(call build_policy, $(sepolicy_build_files), \
 		-D old_sepolicy=$(POLICYVERS) \
 		-D target_recovery=true \
 		-D target_needs_platform_text_relocations=$(TARGET_NEEDS_PLATFORM_TEXT_RELOCATIONS) \
+		-D target_uses_legacy_adb_interface=$(TARGET_USES_LEGACY_ADB_INTERFACE) \
 		-s $^ > $@
 	$(hide) sed '/dontaudit/d' $@ > $@.dontaudit
 
@@ -609,6 +601,7 @@ $(PLAT_PUBLIC_POLICY) $(PLAT_PRIVATE_POLICY))
 		-D target_with_asan=false \
 		-D target_full_treble=cts \
 		-D target_needs_platform_text_relocations=$(TARGET_NEEDS_PLATFORM_TEXT_RELOCATIONS) \
+		-D target_uses_legacy_adb_interface=$(TARGET_USES_LEGACY_ADB_INTERFACE) \
 		-s $^ > $@
 	$(hide) sed '/dontaudit/d' $@ > $@.dontaudit
 
@@ -825,7 +818,7 @@ $(LOCAL_BUILT_MODULE): PRIVATE_SC_FILES := $(nonplat_sc_files)
 $(LOCAL_BUILT_MODULE): PRIVATE_SC_NEVERALLOW_FILES := $(plat_sc_neverallow_files)
 $(LOCAL_BUILT_MODULE): $(built_sepolicy) $(nonplat_sc_files) $(HOST_OUT_EXECUTABLES)/checkseapp $(plat_sc_neverallow_files)
 	@mkdir -p $(dir $@)
-	$(hide) grep -ie '^neverallow' $(PRIVATE_SC_NEVERALLOW_FILES) > $@.tmp
+	$(hide) grep -ihe '^neverallow' $(PRIVATE_SC_NEVERALLOW_FILES) > $@.tmp
 	$(hide) $(HOST_OUT_EXECUTABLES)/checkseapp -p $(PRIVATE_SEPOLICY) -o $@ $(PRIVATE_SC_FILES) $@.tmp
 
 built_nonplat_sc := $(LOCAL_BUILT_MODULE)
@@ -841,7 +834,7 @@ include $(BUILD_SYSTEM)/base_rules.mk
 
 $(LOCAL_BUILT_MODULE): $(plat_sc_neverallow_files)
 	@mkdir -p $(dir $@)
-	- $(hide) grep -ie '^neverallow' $< > $@
+	- $(hide) grep -ihe '^neverallow' $< > $@
 
 plat_sc_neverallow_files :=
 
